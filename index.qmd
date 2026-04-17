@@ -1,0 +1,44 @@
+---
+title: "Math 3190 Assignments"
+---
+
+This website contains all homework assignments for Math 3190
+
+```{r, echo=FALSE}
+library(ggplot2)
+
+# Face outline
+t <- seq(0, 2*pi, length.out = 500)
+face <- data.frame(
+  x = cos(t),
+  y = sin(t)
+)
+
+# Left eye
+t_eye <- seq(0, 2*pi, length.out = 200)
+left_eye <- data.frame(
+  x = -0.35 + 0.1*cos(t_eye),
+  y =  0.35 + 0.1*sin(t_eye)
+)
+
+# Right eye
+right_eye <- data.frame(
+  x = 0.35 + 0.1*cos(t_eye),
+  y = 0.35 + 0.1*sin(t_eye)
+)
+
+# Smile
+t_mouth <- seq(pi/10, 9*pi/10, length.out = 200)
+mouth <- data.frame(
+  x = 0.45*cos(t_mouth),
+  y = -0.15 - 0.35*sin(t_mouth)
+)
+
+ggplot() +
+  geom_polygon(data = face, aes(x, y), fill="pink", color="black", linewidth = 1) +
+  geom_polygon(data = left_eye, aes(x, y), fill="black", linewidth = 1) +
+  geom_polygon(data = right_eye, aes(x, y), fill="black", linewidth = 1) +
+  geom_path(data = mouth, aes(x, y), linewidth = 2) +
+  coord_fixed() +
+  theme_void()
+```

@@ -1,0 +1,265 @@
+---
+title: "**MATH 3190 Homework 7**"
+subtitle: |
+  Due March 26, 2026\
+  Focus: Notes 8\
+  Total Points: 90 + 10 (Self-Critique Comment and Uploading to GitHub) = 100
+format: 
+  html:
+    embed-resources: true # Keep this so the html file is easily shareable.
+urlcolor: blue
+execute: # Will set these as the default for all code chunks
+  eval: true
+  echo: true
+editor_options: 
+  chunk_output_type: console
+---
+
+Note that your homework should be completed in Quarto. You can just add your answers and code to this document in the appropriate part. The file should be rendered as an html document or pdf document (html is quicker to render and you will need an installation of LaTeX to render as a pdf). You will "turn in" this homework by uploading the files, the .qmd and output file, to your GitHub `Math_3190_Assignment` repository in the `Homework/Homework_7` directory. Make sure all supporting files (if there are any) are in this directory as well. You should use `git` and `Unix` commands in a terminal for this (i.e. don't manually upload files to GitHub). In addition, you will submit just your html or pdf file on Canvas to unlock the solutions.
+
+Don't forget to also put a [self-critique comment]{.underline} on Canvas indicating what you did correctly and incorrectly and include any questions you may have about the assignment after submitting the assignment and thoroughly looking through the solutions.
+
+# Problem 1 (57 points)
+
+In Homework 6, we briefly looked at a small sample from this data set. Now we have the full data set with 20,640 districts. For districts in California from 1990, we want to predict the median house value for the district based on the district location (longitude and latitude), the median house age in the block group, the total number of rooms in the homes, the total number of bedrooms, the population in the district, the number of households, and the median income (in \$10,000). These data were obtained from [scikit-learn.org](https://scikit-learn.org/stable/datasets.html) and can be found in the Data folder of the Math3190_Sp26 GitHub repo with the name `cal_housing.data`.
+
+### Part a (5 points)
+
+Read in the data. The `read.csv()` function works for files that end in `.data` if they are comma separated like this file is. However, be aware that the housing data does not have column names, so make sure to put `header = FALSE`. Assign appropriate column names to the columns and then take logs (base e) of all variables except lat and long. Once this is done, split the data into training and testing sets with the testing containing 20% of the values. Set a seed when you do this.
+
+```{r}
+suppressPackageStartupMessages({
+library(dplyr)})
+housing=read.csv("/Users/siennahardyman/Downloads/cal_housing.data", header=FALSE)
+colnames(housing)=c("longitude","latitude","age","rooms","bedrooms","population","occupants","income","value")
+housing=housing |> mutate(age=log(age), rooms=log(rooms), bedrooms=log(bedrooms), population=log(population), occupants=log(occupants), income=log(income), value=log(value))
+
+
+set.seed(1)
+test_index=sample(1:nrow(housing), size=round(nrow(housing)*0.2))
+housetrain=housing[-test_index,]
+housetest=housing[test_index,]
+```
+
+### Part b (5 points)
+
+Use the following command to view pair-wise scatter plots for the data here. Change `housing_train` to whatever you called the training set and be sure to change the `eval` option for the code chunk to `true`. Note, that `lower` option changes the points to be plotted with periods instead of circles. This speeds up plotting time considerably and makes the plots more readable since there are many data points here.
+
+Based on these plots, does multicollinearity appear to be an issue here? Explain.
+
+```{r}
+#| label: house_pairs
+#| cache: true
+#| eval: true
+suppressPackageStartupMessages({
+library(GGally)})
+ggpairs(housetrain, 
+        lower = list(continuous = wrap("points", shape = "."))
+)
+```
+
+The plot shows that rooms, bedrooms, and population are highly correlated as well as occupants and value so multicollinearty will be an issue.
+
+### Part c (4 points)
+
+Fit a OLS regression model predicting house prices from all other variables. Check its summary output and its VIF values. Comment on the VIFs.
+
+```{r}
+suppressPackageStartupMessages({
+library(car)})
+house_mod=lm(value~income+occupants+population+bedrooms+rooms+age+latitude+longitude, data=housetrain)
+summary(house_mod)
+vif(house_mod)
+```
+
+The VIF values of income and age are less than 5 so multicollinearity is not an issue. The VIF value of population and longitude is above 5 which indicates moderate correlation. Occupants,bedrooms, rooms, latitude, and longitude are all highly correlated with VIF values above 10.
+
+### Part d (3 points)
+
+Fit a principal component model using the `pcr()` function in the `pls` package. Since the variables are on very different scales, use the `scale = TRUE` option in the function. Then find the VIF values for this model. The `vif()` function from the `car` library won't work here. Instead, you can take the diagonals of the inverse of the correlation matrix (like is shown in the regularization section of Notes 7) for the `scores` output. The code for this is `diag(solve(cor(pca_model$scores)))`. Of course, you need to change `pca_model` to what you called your model.
+
+```{r}
+suppressPackageStartupMessages({
+library(pls)})
+house_pca=pcr(value~income+occupants+population+bedrooms+rooms+age+latitude+longitude, data=housetrain, scale=TRUE)
+diag(solve(cor(house_pca$scores)))
+```
+
+### Part e (5 points)
+
+Now take the summary of your principal component model. With PCA, the common amount of variation we want to explain in the predictors is 90% or more. How many components are needed to achieve this? For that number of components, how much of the variation in log of home values is explained? How many components are needed to explain a "good" amount of the variation in the log of home values? Note: the upper bound on the amount of variation in the log of home values here with all 8 components will be equal to the $R^2$ value of the OLS model.
+
+```{r}
+summary(house_pca)
+```
+
+4 components will explain 97% of variation. With 4 components, only 49% of the variation in the log(value) is explained. 6 components essentially explain the most amount of variation possible for log(value).
+
+### Part f (4 points)
+
+Now fit a partial least squares model using the `plsr()` function in the `pls` package with `scale = TRUE`. Then find the VIF values for this model like you did in part (d) and comment on them.
+
+```{r}
+house_pls=plsr(value~income+occupants+population+bedrooms+rooms+age+latitude+longitude, data=housetrain, scale=TRUE)
+diag(solve(cor(house_pls$scores)))
+```
+
+The VIF values are all exacltly 1 so there is no multicollinearity issue.
+
+### Part g (4 points)
+
+Now take the summary of your partial least squares model. Compare this output to the summary of the PCA model. Explain what the differences are. How many components are needed to balance a good amount of variation explained in $X$ and in $y$ for the PLS model?
+
+```{r}
+summary(house_pls)
+```
+
+The PLS model explains a higher level of variation in the response variable in fewer components. For example, in just one component the PLS model explains 40% while the PCA model requires 4 components to explain the same amount of variation. On the other hand, the PCA model explains a higher level of variation in the predictors in fewer components. The PLS model gives a better balance in explaining variation in both X and Y. The PCA model required 6 components to achieve a good balance in variation while the PLS model explains a similar amount of variation in both X and Y with 5 components.
+
+### Part h (8 points)
+
+In part (e), you said how many components were needed for the PCA to explain a good amount of the $Y$ variable. Using that number of components, use the PCA and PLS models to find the root MSE when predicting the testing set. Note: the root MSE (or residual standard error, also abbreviated RMSE) is found by taking the square root of the sum of squared residuals divided by the residual degrees of freedom, which is $n-p-1$, where $p$ is the number of predictors in the model. Also, be aware that when you use the `predict()` function on your model, it will give you predictions for each number of components. You can access the predictions for using 3 components, for example, by typing `predict(pca_model, test_set)[,,3]`.
+
+Then in part (g), you said how many components were needed for the PLS Using that number of components. Using this number of components, use the PCA and PLS models to find the root MSE predicting the testing set.
+
+```{r}
+pca_predict=predict(house_pca, housetest)[,,6]
+pls_predict=predict(house_pls, housetest)[,,5]
+
+y=housetest$value
+n=length(y)
+p=8
+pca_rmse=sqrt(sum((y-pca_predict)^2)/(n-p-1))
+pca_rmse
+
+pls_rmse=sqrt(sum((y-pls_predict)^2)/(n-p-1))
+pls_rmse
+```
+
+Compare the results of the predictions in both cases.
+
+The PCR model had a root MSE for the test set of 0.3285547 while the PLS model had a root MSE for the test set of 0.329087. Both models are very similar in terms of accuracy but the PCA model performed slightly better since the root MSE is slightly lower.
+
+### Part i (12 points)
+
+Using the number of components you said were needed for the PLS model in part (g), come up with reasonable surrogates for each of those components. Look at the projection output for this. When creating your surrogates, make sure to center and scale each variable. You can do this with the `scale()` function and putting your housing data frame or tibble in it.
+
+Then fit a OLS model using those surrogates in the training set. Check the VIF of this model to make sure each one is below 5. If they are not, your surrogates should be changed. You can use the `vif()` function in the `car` package here.
+
+```{r}
+round(house_pls$projection[, 1:5],3)
+x=scale(housetrain[,c("income","occupants", "population", "bedrooms", "rooms", "age", "latitude", "longitude")])
+S1=x[,1]
+S2=(x[,1]+x[,6])/2-x[,3]
+S3=(x[,4]+x[,6])/2-x[,8]
+S4=-(x[,7]+x[,8])/2
+S5=x[,4]-(x[,7]+x[,8])/2
+
+house_surrogate=lm(value~S1+S2+S3+S4+S5, data=housetrain)
+vif(house_surrogate)
+```
+
+### Part j (7 points)
+
+Now using that model you fit in the previous part with the surrogates, find the root MSE for predicting the testing set using that model, and compare it to what you got in part (h). Describe some pros and cons of the surrogate model.
+
+Hint: to predict using this model, you will have to create a `newdata` data frame (or tibble) and then redefine your surrogates in that data frame using the scaled testing data set. Make sure the variable names in the `newdata` data frame match the variables names used in the model you defined in part (i).
+
+```{r}
+x_test=scale(housetest[,c("income","occupants", "population", "bedrooms", "rooms", "age", "latitude", "longitude")])
+S1_test=(x_test[,1])
+S2_test=(x_test[,1]+x_test[,6])/2-x_test[,3]
+S3_test=(x_test[,4]+x_test[,6])/2-(x_test[,8])
+S4_test=-(x_test[,7]+x_test[,8])/2
+S5_test=x_test[,4]-(x_test[,7]+x_test[,8])/2
+
+newdata=data.frame(S1=S1_test, S2=S2_test, S3=S3_test, S4=S4_test, S5=S5_test)
+
+s_predict=predict(house_surrogate, newdata)
+y=housetest$value
+n=length(y)
+p=8
+
+s_rmse=sqrt(sum((y-s_predict)^2)/(n-p-1))
+s_rmse
+```
+
+My root MSE in part h was 0.329087, and my root MSE in part J was 0.3320503. These are very similar with a difference of only 0.003. Using surrogates removed multicollinearity issues since the VIFs are much closer to 1 and all less than 5. Interpretation is also much easier since surrogates work with linear regression models. They also have similiar preformance to the PLS model. On the other hand, the surrorgates themselves are hard to interperet, and required manual contruction. Results are also dependent on how well the surrogates were chosen.
+
+# Problem 2 (33 points)
+
+In base **R**, there is a dataset called `penguins`. Type `?penguins` to read a little about the data.
+
+### Part a (6 points)
+
+Remove the rows in the penguins dataset that have missing values. Then use the `ggpairs()` function from `GGally` to make pairwise scatterplots for the four quantitative variables and color the points based on the `species` variable. Note that the `ggpairs()` function has a `columns` argument where you can select the columns you want to plot and it has a `mapping` argument where you can put `aes(color = species, alpha = 0.5)` to color the points by species.
+
+Include the plot here and then comment on which scatterplots seem to nicely separate the penguins by species and which tend to have worse separation.
+
+```{r}
+#| warning: false
+#| fig-width: 15
+#| fig-height: 12
+penguins=na.omit(penguins)
+library(GGally)
+ggpairs(penguins, columns=c("bill_len","bill_dep","flipper_len", "body_mass"), mapping=aes(color=species, alpha=0.5))
+```
+
+The scatter plots of bill length vs bill depth and bill length vs flipper length have the most separation. The scatter plots of bill depth vs body mass and flipper length vs body mass have the least separation.
+
+### Part b (4 points)
+
+Run a scaled principal component analysis on the four quantitative variables using the `prcomp()` function. How much of the total variation in these variables is explained by the first two principal components? You can use the `summary()` function on your PCA to find this easily.
+
+```{r}
+x=penguins[,c("bill_len","bill_dep","flipper_len", "body_mass")]
+penguins_pca=prcomp(x, scale=T)
+summary(penguins_pca)
+```
+
+88% of the toal variation is explained by the first two components.
+
+### Part c (6 points)
+
+Plot the first two principal components with PC1 on the x-axis and PC2 on the y-axis. Color the points by species and comment on how well the first two principal components are separating by species.
+
+```{r}
+library(ggplot2)
+pca_df=data.frame(PC1=penguins_pca$x[,1], PC2=penguins_pca$x[,2], species=penguins$species)
+ggplot(pca_df, aes(x=PC1, y=PC2, color=species))+geom_point()
+```
+
+The Gentoo penguins are clearly separated from the other two species. The Chinstrap and Adelie penguins are also somewhat separated with some overlap.
+
+### Part d (12 points)
+
+Now use the `umap()` function in the `umap` library to fit a UMAP to the **scaled** quantitative variables in the penguins dataset. You can use the `scale()` function to scale the variables. Make sure the UMAP gives two components and set a `random_state` in the function so your results are reproducible. Then plot the UMAP using the the `umap_plot()` function in `math3190package` and color the points by `species` using the `color_umap` argument. Experiment with at least three different number of neighbors (`n_neighbors`) and at least three different minimum distances (`min_dist`).
+
+```{r}
+#| fig-width: 7
+#| fig-height: 5
+suppressPackageStartupMessages({
+  library(umap)
+  library(math3190package)})
+xscale=scale(x)
+penguins_umap1=umap(xscale, n_components=2, random_state=1, n_neighbors= 10, min_dist=0.2)
+umap_plot(penguins_umap1, data=penguins, color_umap="species")
+penguins_umap2=umap(xscale, n_components=2, random_state=1, n_neighbors= 40, min_dist=0.2)
+umap_plot(penguins_umap2, data=penguins, color_umap="species")
+penguins_umap3=umap(xscale, n_components=2, random_state=1, n_neighbors= 70, min_dist=0.2)
+umap_plot(penguins_umap3, data=penguins, color_umap="species")
+penguins_umap4=umap(xscale, n_components=2, random_state=1, n_neighbors= 40, min_dist=0.01)
+umap_plot(penguins_umap4, data=penguins, color_umap="species")
+penguins_umap5=umap(xscale, n_components=2, random_state=1, n_neighbors= 40, min_dist=0.2)
+umap_plot(penguins_umap5, data=penguins, color_umap="species")
+penguins_umap6=umap(xscale, n_components=2, random_state=1, n_neighbors= 40, min_dist=0.4)
+umap_plot(penguins_umap6, data=penguins, color_umap="species")
+```
+
+### Part e (5 points)
+
+Comment on the UMAP plots you made in part (d). Include a comparison to the PCA plot regarding how well these species are separated.
+
+Similar to the PCA plot, the Gentoo penguins are clearly separated. The Chinstrap and Adelie penguins are more clearly separated in the UMAP plot with only a few observations overlapping. In the UMAP plots, a smaller minimum distance produced tighter clusters. The number of nearest neighbors changed the structure of the clusters, changing how fragmented each group is.
+
+Feel free to repeat this problem using a variable other than species! Sometimes the UMAP outperforms PCA at separating classes, sometimes it does a little worse, and sometimes there are both quite bad.

@@ -1,0 +1,17 @@
+
+---
+title: "**Spline Regression**"
+subtitle: |
+  By: Sienna Hardyman, Jane Willden, Preston Hindman
+format: 
+  html:
+    embed-resources: 
+urlcolor: blue
+execute: # Will set these as the default for all code chunks
+  eval: true
+  echo: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
