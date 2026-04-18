@@ -1,9 +1,11 @@
 project:
   type: website
-
+  output-dir: docs
+  
 website:
   title: "Math 3190 Assignments"
   navbar:
+    search: true
     left:
       - href: index.qmd
         text: Home
