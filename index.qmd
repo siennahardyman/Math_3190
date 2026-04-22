@@ -35,7 +35,7 @@ mouth <- data.frame(
 )
 
 ggplot() +
-  geom_polygon(data = face, aes(x, y), fill="pink", color="black", linewidth = 1) +
+  geom_polygon(data = face, aes(x, y), fill="plum2", color="black", linewidth = 1) +
   geom_polygon(data = left_eye, aes(x, y), fill="black", linewidth = 1) +
   geom_polygon(data = right_eye, aes(x, y), fill="black", linewidth = 1) +
   geom_path(data = mouth, aes(x, y), linewidth = 2) +
