@@ -6,29 +6,31 @@ website:
   title: "Math 3190 Assignments"
   navbar:
     search: true
-    left:
+    right:
       - href: index.qmd
         text: Home
-      - href: Homework/HW1/homework_1.qmd
-        text: Homework 1
-      - href: Homework/HW2/homework_2.qmd
-        text: Homework 2
-      - href: Homework/HW3/homework_3.qmd
-        text: Homework 3
-      - href: Homework/HW4/homework_4.qmd
-        text: Homework 4
-      - href: Homework/HW5/homework_5.qmd
-        text: Homework 5
-      - href: Homework/HW6/homework_6.qmd
-        text: Homework 6
-      - href: Homework/HW7/homework_7.qmd
-        text: Homework 7
-      - href: Homework/HW8/homework_8.qmd
-        text: Homework 8
-      - href: Homework/HW9/homework_9.qmd
-        text: Homework 9
-      - href: Homework/HW10/homework_10.qmd
-        text: Homework 10
+      - text: "Homework"
+        menu:
+          - href: Homework/HW1/homework_1.qmd
+            text: Homework 1
+          - href: Homework/HW2/homework_2.qmd
+            text: Homework 2
+          - href: Homework/HW3/homework_3.qmd
+            text: Homework 3
+          - href: Homework/HW4/homework_4.qmd
+            text: Homework 4
+          - href: Homework/HW5/homework_5.qmd
+            text: Homework 5
+          - href: Homework/HW6/homework_6.qmd
+            text: Homework 6
+          - href: Homework/HW7/homework_7.qmd
+            text: Homework 7
+          - href: Homework/HW8/homework_8.qmd
+            text: Homework 8
+          - href: Homework/HW9/homework_9.qmd
+            text: Homework 9
+          - href: Homework/HW10/homework_10.qmd
+            text: Homework 10
         
 format:
   html:
